@@ -210,6 +210,15 @@ def get_answer_count() -> int:
     """
     return len(answer_book.answers)
 
-if __name__ == "__main__":
-    # 运行MCP服务器
+def main():
+    """uvx入口函数"""
+    import sys
+    if len(sys.argv) > 1 and sys.argv[1] == "--version":
+        print("答案之书 MCP 服务 v1.0.0")
+        return
+    
+    print("启动答案之书 MCP 服务...", file=sys.stderr)
     mcp.run(transport='stdio')
+
+if __name__ == "__main__":
+    main()
