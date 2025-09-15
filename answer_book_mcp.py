@@ -4,96 +4,103 @@ import random
 import json
 import os
 from datetime import datetime
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Set
 import logging
+from pathlib import Path
 
 # 配置日志
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger("answer-book")
 
 # 初始化MCP服务器
-mcp = FastMCP("AnswerBook", 
-              description="一本智慧之书，为你的问题提供随机而富有哲理的答案")
+mcp = FastMCP("AnswerBook")
+
+# 基础答案库 - 定义为常量
+BASE_ANSWERS = [
+    "是的，毫无疑问。",
+    "时机未到，请耐心等待。",
+    "跟随你内心的声音。",
+    "风险太大，建议谨慎。",
+    "这是一个很好的机会。",
+    "重新考虑你的选择。",
+    "答案就在你心中。",
+    "外界因素会影响结果。",
+    "保持乐观的态度。",
+    "需要更多的信息。",
+    "信任你的直觉。",
+    "暂时搁置，稍后再议。",
+    "与他人合作会有帮助。",
+    "独自思考会更好。",
+    "改变你的视角。",
+    "答案是肯定的。",
+    "答案是否定的。",
+    "可能不会如你所愿。",
+    "超出预期的好结果。",
+    "顺其自然。",
+    "主动出击。",
+    "静观其变。",
+    "需要做出牺牲。",
+    "值得冒险一试。",
+    "保持现状。",
+    "寻求他人的建议。",
+    "相信自己。",
+    "命运掌握在自己手中。",
+    "一切都是最好的安排。",
+    "放下执念。"
+]
 
 class AnswerBook:
     def __init__(self):
         self.answers = self._load_answers()
         self.history = []
         self.stats = {"total_queries": 0, "popular_questions": {}}
+        self._base_answers_set = set(BASE_ANSWERS)  # 用于快速查找基础答案
+    
+    def _get_config_dir(self) -> Path:
+        """获取配置目录路径"""
+        return Path.home()
+    
+    def _get_custom_answers_file(self) -> Path:
+        """获取自定义答案文件路径"""
+        return self._get_config_dir() / "custom_answers.json"
     
     def _load_answers(self) -> List[str]:
         """加载答案库"""
-        # 基础答案库
-        base_answers = [
-            "是的，毫无疑问。",
-            "时机未到，请耐心等待。",
-            "跟随你内心的声音。",
-            "风险太大，建议谨慎。",
-            "这是一个很好的机会。",
-            "重新考虑你的选择。",
-            "答案就在你心中。",
-            "外界因素会影响结果。",
-            "保持乐观的态度。",
-            "需要更多的信息。",
-            "信任你的直觉。",
-            "暂时搁置，稍后再议。",
-            "与他人合作会有帮助。",
-            "独自思考会更好。",
-            "改变你的视角。",
-            "答案是肯定的。",
-            "答案是否定的。",
-            "可能不会如你所愿。",
-            "超出预期的好结果。",
-            "顺其自然。",
-            "主动出击。",
-            "静观其变。",
-            "需要做出牺牲。",
-            "值得冒险一试。",
-            "保持现状。",
-            "寻求他人的建议。",
-            "相信自己。",
-            "命运掌握在自己手中。",
-            "一切都是最好的安排。",
-            "放下执念。"
-        ]
+        answers = BASE_ANSWERS.copy()
         
         # 尝试从外部文件加载更多答案
+        custom_answers_file = self._get_custom_answers_file()
         try:
-            config_dir = os.path.expanduser("~/")
-            os.makedirs(config_dir, exist_ok=True)
-            
-            custom_answers_file = os.path.join(config_dir, "custom_answers.json")
-            if os.path.exists(custom_answers_file):
+            if custom_answers_file.exists():
                 with open(custom_answers_file, 'r', encoding='utf-8') as f:
                     custom_data = json.load(f)
-                    base_answers.extend(custom_data.get("answers", []))
-                    logger.info(f"已加载 {len(custom_data.get('answers', []))} 个自定义答案")
-            
-        except Exception as e:
+                    custom_answers = custom_data.get("answers", [])
+                    answers.extend(custom_answers)
+                    logger.info(f"已加载 {len(custom_answers)} 个自定义答案")
+        except (json.JSONDecodeError, IOError) as e:
             logger.warning(f"加载自定义答案失败: {e}")
         
-        return base_answers
+        return answers
     
     def get_answer(self, question: str) -> str:
         """获取随机答案"""
-        if not question.strip():
+        question = question.strip()
+        if not question:
             return "请提出一个具体的问题。"
         
         answer = random.choice(self.answers)
         
         # 记录历史
+        timestamp = datetime.now().isoformat()
         self.history.append({
-            "timestamp": datetime.now().isoformat(),
+            "timestamp": timestamp,
             "question": question,
             "answer": answer
         })
         
         # 更新统计
         self.stats["total_queries"] += 1
-        if question in self.stats["popular_questions"]:
-            self.stats["popular_questions"][question] += 1
-        else:
-            self.stats["popular_questions"][question] = 1
+        self.stats["popular_questions"][question] = self.stats["popular_questions"].get(question, 0) + 1
         
         # 保持历史记录不超过100条
         if len(self.history) > 100:
@@ -103,36 +110,34 @@ class AnswerBook:
     
     def get_history(self, limit: int = 10) -> List[Dict]:
         """获取查询历史"""
-        return self.history[-limit:]
+        return self.history[-limit:] if limit > 0 else []
     
     def get_stats(self) -> Dict:
         """获取统计信息"""
-        return self.stats
+        return self.stats.copy()  # 返回副本以避免外部修改
     
     def add_custom_answer(self, answer: str) -> bool:
         """添加自定义答案"""
-        if answer and answer not in self.answers:
-            self.answers.append(answer)
+        if not answer or answer in self.answers:
+            return False
             
-            # 保存到文件
-            try:
-                config_dir = os.path.expanduser("~/")
-                os.makedirs(config_dir, exist_ok=True)
-                
-                custom_answers_file = os.path.join(config_dir, "custom_answers.json")
-                data = {"answers": [a for a in self.answers if a not in [
-                    "是的，毫无疑问。", "时机未到，请耐心等待。", "跟随你内心的声音。"
-                    # 这里可以列出所有基础答案以避免重复保存
-                ]]}
-                
-                with open(custom_answers_file, 'w', encoding='utf-8') as f:
-                    json.dump(data, f, ensure_ascii=False, indent=2)
-                
-                return True
-            except Exception as e:
-                logger.error(f"保存自定义答案失败: {e}")
-                return False
-        return False
+        self.answers.append(answer)
+        
+        # 保存到文件
+        try:
+            custom_answers = [a for a in self.answers if a not in self._base_answers_set]
+            data = {"answers": custom_answers}
+            
+            with open(self._get_custom_answers_file(), 'w', encoding='utf-8') as f:
+                json.dump(data, f, ensure_ascii=False, indent=2)
+            
+            logger.info(f"成功添加自定义答案: {answer}")
+            return True
+        except IOError as e:
+            logger.error(f"保存自定义答案失败: {e}")
+            # 回滚添加的答案
+            self.answers.remove(answer)
+            return False
 
 # 创建答案之书实例
 answer_book = AnswerBook()
