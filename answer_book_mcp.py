@@ -59,7 +59,7 @@ class AnswerBook:
         
         # 尝试从外部文件加载更多答案
         try:
-            config_dir = os.path.expanduser("~/.answer_book")
+            config_dir = os.path.expanduser("~/")
             os.makedirs(config_dir, exist_ok=True)
             
             custom_answers_file = os.path.join(config_dir, "custom_answers.json")
@@ -116,7 +116,7 @@ class AnswerBook:
             
             # 保存到文件
             try:
-                config_dir = os.path.expanduser("~/.answer_book")
+                config_dir = os.path.expanduser("~/")
                 os.makedirs(config_dir, exist_ok=True)
                 
                 custom_answers_file = os.path.join(config_dir, "custom_answers.json")
