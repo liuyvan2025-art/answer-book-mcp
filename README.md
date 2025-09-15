@@ -21,3 +21,18 @@
 - `get_recent_history(limit: int)` - 获取历史记录
 - `get_statistics()` - 获取使用统计
 - `add_custom_answer(answer_text: str)` - 添加自定义答案
+
+## 使用示例
+这个MCP服务可以通过各种MCP客户端使用，比如Claude、Cursor等：
+
+```python
+# 示例对话
+用户：我应该接受这个工作机会吗？
+答案之书：跟随你内心的声音。
+
+用户：这个项目能成功吗？
+答案之书：风险太大，建议谨慎。
+
+用户：查看我的历史记录
+答案之书：显示最近5条提问记录
+```
