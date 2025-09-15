@@ -3,13 +3,14 @@ from mcp.server.fastmcp import FastMCP
 import random
 import json
 import os
+import sys
 from datetime import datetime
 from typing import Optional, List, Dict, Set
 import logging
 from pathlib import Path
 
-# 配置日志
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+# 配置日志 - 将输出重定向到stderr以避免干扰MCP JSON通信
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', stream=sys.stderr)
 logger = logging.getLogger("answer-book")
 
 # 初始化MCP服务器
@@ -215,14 +216,49 @@ def get_answer_count() -> int:
     """
     return len(answer_book.answers)
 
+def print_startup_info():
+    """打印启动信息，但避免干扰MCP协议通信"""
+    # 使用标准错误输出（stderr）而不是标准输出（stdout）
+    import sys
+    startup_message = (
+        "=" * 60 + "\n"
+        "        答案之书 MCP 服务         \n"
+        "=" * 60 + "\n"
+        "一个基于Model Context Protocol的智慧答案生成服务\n"
+        "为你的问题提供随机而富有哲理的答案\n"
+        "=" * 60 + "\n"
+        f"✓ 已加载 {len(answer_book.answers)} 个答案\n"
+        "✓ MCP服务已启动成功\n"
+        "✓ 支持多种MCP客户端连接\n"
+        "=" * 60 + "\n"
+        "如何使用:\n"
+        "1. 使用支持MCP协议的客户端软件连接\n"
+        "2. 可用命令:\n"
+        "   - ask_question(question='你的问题') - 获取答案\n"
+        "   - get_recent_history(limit=5) - 查看历史记录\n"
+        "   - get_statistics() - 获取使用统计\n"
+        "   - add_custom_answer(answer_text='答案') - 添加自定义答案\n"
+        "   - get_answer_count() - 查看答案总数\n"
+        "   - clear_history() - 清空历史记录\n"
+        "=" * 60 + "\n"
+        "服务运行中，请不要关闭此窗口...\n"
+    )
+    sys.stderr.write(startup_message)
+    sys.stderr.flush()
+
 def main():
     """uvx入口函数"""
     import sys
     if len(sys.argv) > 1 and sys.argv[1] == "--version":
-        print("答案之书 MCP 服务 v1.0.0")
+        # 版本信息也输出到stderr，避免干扰MCP协议通信
+        sys.stderr.write("答案之书 MCP 服务 v1.0.0\n")
+        sys.stderr.flush()
         return
     
-    print("启动答案之书 MCP 服务...", file=sys.stderr)
+    # 打印详细的启动信息
+    print_startup_info()
+    
+    # 启动服务
     mcp.run(transport='stdio')
 
 if __name__ == "__main__":
