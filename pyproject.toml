@@ -7,11 +7,12 @@ name = "answer-book-mcp"
 version = "1.0.0"
 description = "一本智慧之书 MCP 服务，为问题提供随机而富有哲理的答案"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 dependencies = [
     "mcp>=1.0.0",
     "fastapi>=0.104.0",
-    "uvicorn>=0.24.0"
+    "uvicorn>=0.24.0",
+    "uv>=0.1.15"
 ]
 
 [project.scripts]
